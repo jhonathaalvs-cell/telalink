@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="description" content="Compartilhe sua tela em tempo real com uma sala e um link." />
+  <title>TelaLink — Compartilhe sua tela</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/client.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="TelaLink início">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2.5"></rect><path d="M8 21h8M12 17v4M9.5 9.5l2.5 2.5 2.5-2.5"></path></svg></span>
+      <span>Tela<span class="brand-accent">Link</span></span>
+    </a>
+    <div class="topbar-right"><span class="secure-dot"></span><span>Conexão em tempo real</span></div>
+  </header>
+
+  <main class="main-wrap">
+    <section id="landing" class="landing">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span> COMPARTILHE. CONECTE. COLABORE.</div>
+        <h1>Sua tela.<br /><span class="gradient-text">Em qualquer lugar.</span></h1>
+        <p class="hero-description">Compartilhe a tela do computador com outra pessoa em tempo real. Sem complicação: crie uma sala, envie o link e pronto.</p>
+        <div class="feature-row">
+          <div class="feature"><span class="feature-icon">↗</span><span>Link compartilhável</span></div>
+          <div class="feature"><span class="feature-icon">◉</span><span>Baixa latência</span></div>
+          <div class="feature"><span class="feature-icon">⌁</span><span>Sem cadastro</span></div>
+        </div>
+      </div>
+
+      <div class="action-grid">
+        <article class="action-card broadcast-card">
+          <div class="card-icon screen-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2.5"></rect><path d="M8 21h8M12 17v4M9 10l3-3 3 3M12 7v6"></path></svg></div>
+          <div class="card-kicker">VOCÊ VAI COMPARTILHAR</div>
+          <h2>Transmitir tela</h2>
+          <p>Inicie uma transmissão e envie o acesso para quem vai assistir.</p>
+          <button id="startBroadcastBtn" class="button button-primary button-full"><span>Iniciar transmissão</span><span class="button-arrow">↗</span></button>
+          <div class="card-foot"><span class="status-pulse"></span> Você controla quando começa e termina</div>
+        </article>
+
+        <article class="action-card watch-card">
+          <div class="card-icon join-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2.5"></rect><path d="m10 8 5 2.5-5 2.5zM8 21h8M12 17v4"></path></svg></div>
+          <div class="card-kicker">VOCÊ VAI ASSISTIR</div>
+          <h2>Entrar em uma sala</h2>
+          <p>Digite o código que a pessoa que está transmitindo compartilhou.</p>
+          <form id="joinForm" class="join-form">
+            <label for="roomCodeInput">Código da sala</label>
+            <div class="input-row"><input id="roomCodeInput" name="roomCode" type="text" minlength="4" maxlength="10" placeholder="Ex.: A7K9Q2" autocomplete="off" required /><button class="button button-secondary" type="submit">Assistir <span>→</span></button></div>
+          </form>
+          <div class="card-foot muted-foot"><span class="tiny-lock">⌑</span> Não precisa instalar nada para assistir</div>
+        </article>
+      </div>
+
+      <div class="how-it-works">
+        <div class="section-label">SIMPLES ASSIM</div>
+        <div class="steps">
+          <div class="step"><span class="step-number">01</span><div><strong>Crie uma sala</strong><p>Autorize o compartilhamento da tela.</p></div></div>
+          <div class="step-connector"></div>
+          <div class="step"><span class="step-number">02</span><div><strong>Compartilhe o link</strong><p>Envie o link ou o código para outra pessoa.</p></div></div>
+          <div class="step-connector"></div>
+          <div class="step"><span class="step-number">03</span><div><strong>Assista ao vivo</strong><p>A tela é transmitida diretamente entre os dispositivos.</p></div></div>
+        </div>
+      </div>
+      <div class="notice"><span class="notice-icon">i</span><p><strong>Importante:</strong> a transmissão de tela funciona melhor em navegadores de computador. Celulares podem assistir pelo navegador, mas transmitir a própria tela exige suporte específico do sistema e do navegador.</p></div>
+    </section>
+
+    <section id="session" class="session hidden" aria-live="polite">
+      <div class="session-heading">
+        <button id="backBtn" class="back-button" type="button"><span>←</span> Sair da sala</button>
+        <div class="session-status"><span id="liveDot" class="status-pulse"></span><span id="sessionStatusText">Preparando sala</span></div>
+      </div>
+      <div class="session-layout">
+        <div class="screen-column">
+          <div class="screen-frame">
+            <div class="screen-frame-top"><div class="window-dots"><i></i><i></i><i></i></div><span id="screenFrameLabel">TELA COMPARTILHADA</span><span class="frame-live"><span></span> AO VIVO</span></div>
+            <div id="videoStage" class="video-stage">
+              <video id="remoteVideo" autoplay playsinline class="stage-video hidden"></video>
+              <video id="localVideo" autoplay muted playsinline class="stage-video hidden"></video>
+              <div id="emptyStage" class="empty-stage"><div class="empty-art"><div class="empty-screen"><span></span><span></span><span></span><i>↗</i></div></div><h2 id="emptyTitle">Aguardando transmissão</h2><p id="emptyDescription">Assim que a pessoa iniciar o compartilhamento, a tela aparecerá aqui.</p><div class="waiting-indicator"><span></span><span></span><span></span></div></div>
+            </div>
+            <div class="screen-frame-bottom"><span><span class="frame-lock">▣</span> Sessão privada pelo código</span><span id="qualityLabel">WebRTC • P2P</span></div>
+          </div>
+          <div id="sourceControls" class="source-controls hidden"><div class="controls-copy"><span class="control-green-dot"></span><div><strong>Você está compartilhando sua tela</strong><p>Qualquer pessoa com o link poderá entrar nesta sala.</p></div></div><button id="stopBroadcastBtn" class="button button-danger" type="button"><span class="stop-square"></span> Parar transmissão</button></div>
+        </div>
+        <aside class="session-sidebar">
+          <div class="sidebar-card room-card">
+            <div class="sidebar-title-row"><div><div class="sidebar-kicker">SUA SALA</div><h3>Acesso rápido</h3></div><span class="room-icon">⌘</span></div>
+            <p class="sidebar-description">Envie o link ou compartilhe este código com quem vai assistir.</p>
+            <div class="room-code-box"><span id="roomCodeDisplay">------</span><button id="copyCodeBtn" class="icon-button" aria-label="Copiar código" title="Copiar código" type="button">▢</button></div>
+            <button id="copyLinkBtn" class="button button-primary button-full" type="button"><span>Copiar link da sala</span><span>↗</span></button>
+            <div id="copyFeedback" class="copy-feedback" aria-live="polite"></div>
+          </div>
+          <div class="sidebar-card participants-card"><div class="sidebar-title-row"><div><div class="sidebar-kicker">NA SALA</div><h3>Participantes</h3></div><span id="participantCount" class="participant-count">1</span></div><div class="participant"><div id="selfAvatar" class="avatar avatar-self">V</div><div class="participant-info"><strong id="selfName">Você</strong><span id="selfRole">Transmitindo</span></div><span class="participant-badge">VOCÊ</span></div><div class="participant-note"><span class="note-dot"></span><span>A lista de espectadores ainda é básica nesta versão.</span></div></div>
+          <div class="sidebar-help"><span class="help-icon">?</span><div><strong>Problemas para conectar?</strong><p>Use uma conexão HTTPS e mantenha a página aberta durante a transmissão.</p></div></div>
+        </aside>
+      </div>
+      <p id="sessionMessage" class="session-message" role="status"></p>
+    </section>
+  </main>
+
+  <footer class="footer"><span>© 2026 TelaLink</span><span>Feito para compartilhar o que importa.</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
